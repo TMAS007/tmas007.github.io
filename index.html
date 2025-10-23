@@ -11,74 +11,40 @@ body {
   background:#0a0a0a; 
   color:#f5f5f5; 
   text-align:center; 
-  padding:30px; 
+  padding:20px; 
   overflow-x:hidden; 
   -webkit-overflow-scrolling: touch;
 }
-
-h1 { 
-  color:#f7931a; 
-  transition: color 1s linear; 
-  font-size:4.5rem; 
-}
-
-#dateTime { 
-  margin-top:5px;
-  font-size:3rem; 
-  font-weight: bold; 
-  color:#fff; 
-}
-
+h1 { color:#f7931a; font-size:4.5rem; transition: color 1s linear; }
+#dateTime { margin-top:5px; font-size:3rem; font-weight: bold; color:#fff; }
 #cardBlockTimer {
-  margin: -28px auto 40px auto;
-  padding: 0px 60px;
-  width: 65%;
-  max-width: 700px;
-  border-radius: 40px;
-  text-align: center;
-  font-weight: bold;
-  color: #fff;
-  font-size: 2rem;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+  margin:-28px auto 40px auto;
+  padding:0px 60px;
+  width:65%;
+  max-width:700px;
+  border-radius:40px;
+  text-align:center;
+  font-weight:bold;
+  color:#fff;
+  font-size:2rem;
+  text-shadow:1px 1px 3px rgba(0,0,0,0.6);
   background: linear-gradient(270deg,#1E90FF,#00CED1,#2ECC71,#F1C40F,#E74C3C);
   background-size: 1000% 1000%;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.3), 0 0 15px rgba(0,0,0,0.2);
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.3),0 0 15px rgba(0,0,0,0.2);
   transition: background 1s linear;
 }
-
-#cardBlockTimer h3 { font-size: 3.5rem; margin-bottom: 10px; }
-#blockTimer { font-size: 3.5rem; }
-
-.grid { 
-  display:grid; 
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); 
-  gap:25px; 
-  margin-top:35px; 
-}
-
-.card { 
-  background:#1a1a1a; 
-  padding:20px; 
-  border-radius:15px; 
-  box-shadow:0 0 12px rgba(255,149,0,0.15); 
-  transition: background 0.5s ease; 
-}
-
+#cardBlockTimer h3 { font-size:3.5rem; margin-bottom:10px; }
+#blockTimer { font-size:3.5rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:25px; margin-top:35px; }
+.card { background:#1a1a1a; padding:20px; border-radius:15px; box-shadow:0 0 12px rgba(255,149,0,0.15); transition: background 0.5s ease; }
 .value { font-size:2rem; font-weight:bold; margin-top:10px; transition: color 0.3s ease; }
-
 #probMeter { font-size:2.5rem; transition:color 0.3s ease; }
-
 table { margin:20px auto; border-collapse:collapse; width:90%; display:block; overflow-x:auto; }
 th,td { padding:10px 14px; border:1px solid #444; text-align:center; }
 th { background:#222; color:#f7931a; }
-
-.flash-overlay { position:fixed; top:0; left:0; width:100%; height:100%; 
-  background:rgba(231,76,60,0.5); pointer-events:none; opacity:0; 
-  transition: opacity 0.3s ease; z-index:9999; 
-}
+.flash-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(231,76,60,0.5); pointer-events:none; opacity:0; transition: opacity 0.3s ease; z-index:9999; }
 .flash-overlay.active { opacity:1; animation: flashPulse 0.8s ease 0s 2; }
 @keyframes flashPulse { 0%{opacity:0.5;} 50%{opacity:1;} 100%{opacity:0.5;} }
-
 .bar-container { background:#222; border-radius:12px; height:30px; overflow:hidden; margin-top:10px; }
 .bar-fill { height:100%; width:0%; background:linear-gradient(to right,#2ecc71,#f1c40f,#e74c3c); transition: width 0.1s, background 0.1s; }
 </style>
@@ -107,16 +73,12 @@ th { background:#222; color:#f7931a; }
 
 <div class="card" style="margin-top:20px;">
   <h3>Live Block Mining Progress</h3>
-  <div class="bar-container">
-    <div id="liveBlockProgress" class="bar-fill"></div>
-  </div>
+  <div class="bar-container"><div id="liveBlockProgress" class="bar-fill"></div></div>
 </div>
 
 <div class="card" style="margin-top:20px;">
   <h3>🔥 Block Imminence Heartbeat</h3>
-  <div class="bar-container">
-    <div id="heartbeatBar" class="bar-fill"></div>
-  </div>
+  <div class="bar-container"><div id="heartbeatBar" class="bar-fill"></div></div>
 </div>
 
 <div class="grid" style="margin-top:20px;">
@@ -137,9 +99,179 @@ th { background:#222; color:#f7931a; }
 <div class="flash-overlay" id="flashOverlay"></div>
 
 <script>
-// כאן שמרתי את כל הסקריפט שלך ללא שינוי פונקציונלי, רק התאמות קטנות ל-resize ופונטים גדולים
-// כולל WebSocket, updateDashboard, Charts, updateBTCPrice, predictNextBlockID וכו'
-// הקוד שלך יעבוד בדיוק כמו במחשב אבל מותאם לגודל מסך של iPhone 11 Pro Max
+// --- Globals ---
+let lastBlockReceiveTime = Date.now();
+let currentHeight = 0;
+let mempoolTxs = [];
+let btcPrice = 0;
+let chartData={labels:[],mempool:[],prob:[]};
+
+// --- Date & Time ---
+function updateDateTime(){
+  document.getElementById("dateTime").textContent = new Date().toLocaleString();
+  requestAnimationFrame(updateDateTime);
+}
+requestAnimationFrame(updateDateTime);
+
+// --- Animate Title ---
+let hue = 0;
+function animateTitle(){ 
+  hue = (hue+0.5)%360; 
+  document.getElementById("mainTitle").style.color=`hsl(${hue},100%,50%)`; 
+  requestAnimationFrame(animateTitle);
+}
+requestAnimationFrame(animateTitle);
+
+// --- Gradient Timer ---
+const cardTimer = document.getElementById("cardBlockTimer");
+let gradientAngle = 0;
+setInterval(()=>{
+    gradientAngle = (gradientAngle+1)%360;
+    cardTimer.style.background=`linear-gradient(${gradientAngle}deg,#1E90FF,#00CED1,#2ECC71,#F1C40F,#E74C3C)`;
+},80);
+
+// --- Flash & Card ---
+function triggerFlashOverlay(){ const overlay=document.getElementById("flashOverlay"); overlay.classList.add("active"); setTimeout(()=>overlay.classList.remove("active"),1600);}
+function flashCard(card,color="#f1c40f"){ const orig=card.style.background; card.style.background=color; setTimeout(()=>{card.style.background=orig;},600);}
+
+// --- Update Top TX Table ---
+function updateTopTxTable(){
+  const top=mempoolTxs.sort((a,b)=>b.feeRate-a.feeRate).slice(0,10);
+  const tbody=document.querySelector("#topTxTable tbody");
+  tbody.innerHTML="";
+  top.forEach(tx=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${tx.hash.slice(0,12)}...</td><td>${tx.feeRate.toFixed(1)}</td><td>${tx.value.toFixed(5)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// --- Predict Next Block ID ---
+function predictNextBlockID(){
+  if(mempoolTxs.length===0) return "—";
+  const top = mempoolTxs.sort((a,b)=>b.feeRate-a.feeRate).slice(0,5);
+  let combined = top.map(t=>t.hash.slice(0,4)).join("");
+  let sum = 0; for(const c of combined) sum+=c.charCodeAt(0);
+  return combined.split("").reverse().join("") + (sum%1000);
+}
+
+// --- Predicted BTC Chart ---
+const ctxPredBTC=document.getElementById("predBTCChart").getContext("2d");
+const predBTCChart=new Chart(ctxPredBTC,{
+    type:'line',
+    data:{labels:[],datasets:[{label:'Predicted BTC Next Block', data:[], borderColor:'#3498db', backgroundColor:[], tension:0.2, fill:true}]},
+    options:{responsive:true, plugins:{legend:{labels:{color:'#f5f5f5'}}}, scales:{y:{ticks:{color:'#3498db'}}, x:{ticks:{color:'#f5f5f5'}}}}
+});
+
+// --- Update BTC Mined ---
+function updatePredBTCChart(btc){
+    const color = btc<=6.5?'rgba(46,204,113,0.4)':btc<=7?'rgba(241,196,15,0.4)':'rgba(231,76,60,0.4)';
+    predBTCChart.data.labels.push(new Date().toLocaleTimeString());
+    predBTCChart.data.datasets[0].data.push(btc);
+    predBTCChart.data.datasets[0].backgroundColor.push(color);
+    if(predBTCChart.data.labels.length>30){ predBTCChart.data.labels.shift(); predBTCChart.data.datasets[0].data.shift(); predBTCChart.data.datasets[0].backgroundColor.shift(); }
+    predBTCChart.update();
+}
+
+function updateBTCMined(){
+    const blockReward=6.25;
+    let totalFees=0,totalSize=0;
+    const sorted=mempoolTxs.sort((a,b)=>b.feeRate-a.feeRate);
+    for(const tx of sorted){
+        if(totalSize+tx.size>1000000) break;
+        totalSize+=tx.size;
+        totalFees+=tx.fee||0;
+    }
+    const btcLive=blockReward + totalFees/1e8;
+    document.getElementById("btcLiveMined").textContent=btcLive.toFixed(5)+" BTC";
+    document.getElementById("predBlockSize").textContent=(totalSize/1000).toFixed(1)+" KB";
+    document.getElementById("predBlockFees").textContent=(totalFees/1e8).toFixed(5)+" BTC";
+    document.getElementById("nextBlockID").textContent=predictNextBlockID().slice(0,12)+"…";
+    updatePredBTCChart(btcLive);
+}
+
+// --- Live Chart ---
+const ctx=document.getElementById("liveChart").getContext("2d");
+const gradient=ctx.createLinearGradient(0,0,0,350);
+gradient.addColorStop(0,'rgba(231,76,60,0.6)');
+gradient.addColorStop(1,'rgba(231,76,60,0.1)');
+const chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[
+  {label:'Mempool TXs', data:[], borderColor:'#f7931a', backgroundColor:'rgba(247,147,26,0.2)', tension:0.2,yAxisID:'y1'},
+  {label:'Block Probability (%)', data:[], borderColor:'#e74c3c', backgroundColor:gradient,tension:0.2,yAxisID:'y2',fill:true}
+]},options:{responsive:true,interaction:{mode:'index',intersect:false},scales:{y1:{type:'linear',position:'left',ticks:{color:'#f7931a'}},y2:{type:'linear',position:'right',ticks:{color:'#e74c3c'},grid:{drawOnChartArea:false}},x:{ticks:{color:'#f5f5f5'}}},plugins:{legend:{labels:{color:'#f5f5f5'}}}}});
+
+// --- New Block Handler ---
+function onNewBlock(height,hash){
+  triggerFlashOverlay();
+  document.getElementById("blockTimer").textContent="0m 0s";
+  currentHeight=height;
+  document.getElementById("blockHeight").textContent=currentHeight.toLocaleString();
+  document.getElementById("nextBlockID").textContent=hash.slice(0,12)+"…";
+  lastBlockReceiveTime=Date.now();
+  flashCard(document.getElementById("cardBlockHeight"),"#2ecc71");
+  flashCard(document.getElementById("cardNextBlockID"),"#3498db");
+  flashCard(document.getElementById("cardBTCMined"),"#f39c12");
+  setTimeout(updateBTCMined,0);
+}
+
+// --- WebSocket ---
+const ws1=new WebSocket("wss://ws.blockchain.info/inv");
+ws1.onopen=()=>{ ws1.send(JSON.stringify({op:"blocks_sub"})); ws1.send(JSON.stringify({op:"unconfirmed_sub"})); };
+ws1.onmessage=(msg)=>{
+  const data=JSON.parse(msg.data);
+  if(data.op==="block" && data.x){ onNewBlock(data.x.height,data.x.hash); }
+  if(data.op==="utx" && data.x){
+    const tx=data.x;
+    mempoolTxs.push({hash:tx.hash, feeRate:tx.fee/tx.size, value:tx.out.reduce((s,o)=>s+o.value,0)/1e8, size:tx.size, fee:tx.fee});
+    if(mempoolTxs.length>2000) mempoolTxs.splice(0,mempoolTxs.length-2000);
+  }
+};
+
+// --- BTC Price ---
+async function updateBTCPrice(){
+  try{
+    const res=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const data=await res.json();
+    btcPrice=data.bitcoin.usd;
+    document.getElementById("btcPrice").textContent=btcPrice.toLocaleString()+" USD";
+  }catch(e){ console.error(e);}
+}
+setInterval(updateBTCPrice,10000);
+updateBTCPrice();
+
+// --- Dashboard Update ---
+function updateDashboard(){
+  const secondsTotal=(Date.now()-lastBlockReceiveTime)/1000;
+  const minutes=Math.floor(secondsTotal/60);
+  const seconds=Math.floor(secondsTotal%60);
+  const P=(1-Math.exp(-secondsTotal/600))*100;
+  document.getElementById("probMeter").textContent=P.toFixed(1)+"%";
+  document.getElementById("probMeter").style.color=P<40?"#2ecc71":P<70?"#f1c40f":"#e74c3c";
+  document.getElementById("blockTimer").textContent=`${minutes}m ${seconds}s`;
+  document.getElementById("blockETA").textContent=(600-secondsTotal>0)?`${(600-secondsTotal).toFixed(0)}s`:"<1s";
+
+  const heartbeat=document.getElementById("heartbeatBar");
+  heartbeat.style.width=P.toFixed(1)+"%";
+  const g=Math.max(0,255-(P*2.55)),y=Math.min(255,P*2.55);
+  heartbeat.style.background=`linear-gradient(to right,rgb(46,204,113),rgb(${y},${y},0),rgb(231,76,60))`;
+  heartbeat.style.transform=`scaleX(${1+P/300})`;
+
+  const progressBar=document.getElementById("liveBlockProgress");
+  const progressPercent=Math.min(100,(secondsTotal/600)*100);
+  const g2=Math.max(0,255-(progressPercent*2.55)),y2=Math.min(255,progressPercent*2.55);
+  progressBar.style.width=progressPercent+"%";
+  progressBar.style.background=`linear-gradient(to right,rgb(46,204,113),rgb(${y2},${y2},0),rgb(231,76,60))`;
+
+  chartData.labels.push(new Date().toLocaleTimeString());
+  chartData.prob.push(P);
+  chartData.mempool.push(mempoolTxs.length);
+  if(chartData.labels.length>30){ chartData.labels.shift(); chartData.prob.shift(); chartData.mempool.shift(); }
+  chart.data.labels=chartData.labels; chart.data.datasets[0].data=chartData.mempool; chart.data.datasets[1].data=chartData.prob; chart.update();
+
+  updateTopTxTable();
+  requestAnimationFrame(updateDashboard);
+}
+requestAnimationFrame(updateDashboard);
 </script>
 </body>
 </html>
